@@ -1,0 +1,253 @@
+/* 	SOLUCION BOLETIN 2: CONSULTAS COMPLEJAS
+	UTILIZA EL ARCHIVO banco.sql	*/
+-- Ej 1. Mostrar el saldo medio de todas las cuentas de la entidad bancaria.
+SELECT ROUND(AVG(SALDO),2) AS SALDO_MEDIO
+FROM CUENTA;
+
+-- Ej 2. Mostrar la suma de los saldos de todas las cuentas bancarias
+SELECT SUM(SALDO) AS SUMA_SALDOS
+FROM CUENTA;
+
+-- Ej 3. Mostrar el saldo mínimo, máximo y medio de todas las cuentas bancarias.
+SELECT MIN(SALDO) AS MINIMO, MAX(SALDO) AS MAXIMO, ROUND(AVG(SALDO),2) AS MEDIO
+FROM CUENTA;
+
+/* Ej 4. Mostrar la suma de los saldos y el saldo medio de las cuentas bancarias 
+agrupadas por su código de sucursal */
+SELECT COD_SUCURSAL, SUM(SALDO) AS SUMA_SALDOS, ROUND(AVG(SALDO),2) AS SALDO_MEDIO
+FROM CUENTA
+GROUP BY COD_SUCURSAL
+ORDER BY COD_SUCURSAL;
+
+/* Ej 5. Para cada cliente del banco se desea conocer su código, la cantidad total 
+que tiene depositada en la entidad y el número de cuentas abiertas. */
+SELECT COD_CLIENTE, SUM(SALDO) AS SALDO_TOTAL, COUNT(COD_CUENTA) AS NUM_CUENTAS
+FROM CUENTA
+GROUP BY COD_CLIENTE
+ORDER BY SALDO_TOTAL DESC;
+
+/* Ej 6. Retocar la consulta anterior para que aparezca el nombre y apellidos 
+de cada cliente en vez de su código de cliente.*/
+SELECT NOMBRE, APELLIDOS, SUM(SALDO) AS SALDO_TOTAL, COUNT(COD_CUENTA) AS NUM_CUENTAS
+FROM CUENTA, CLIENTE
+WHERE CUENTA.COD_CLIENTE = CLIENTE.COD_CLIENTE
+GROUP BY CLIENTE.COD_CLIENTE
+ORDER BY SALDO_TOTAL DESC;
+
+--alternativa
+SELECT NOMBRE, APELLIDOS, SUM(SALDO) AS SALDO_TOTAL, COUNT(COD_CUENTA) AS NUM_CUENTAS
+FROM CUENTA, CLIENTE
+WHERE CUENTA.COD_CLIENTE = CLIENTE.COD_CLIENTE
+GROUP BY NOMBRE, APELLIDOS
+ORDER BY SALDO_TOTAL DESC;
+
+
+
+/* Ej 7. Para cada sucursal del banco se desea conocer su dirección, 
+el número de cuentas que tiene abiertas y la suma total que hay en ellas.*/
+SELECT CUENTA.COD_SUCURSAL, DIRECCION, COUNT(COD_CUENTA) AS NUM_CUENTAS, SUM(SALDO) AS SALDO_TOTAL
+FROM SUCURSAL, CUENTA
+WHERE SUCURSAL.COD_SUCURSAL = CUENTA.COD_SUCURSAL
+GROUP BY CUENTA.COD_SUCURSAL, DIRECCION;
+
+/* Ej 8. Mostrar el saldo medio y el interés medio de las cuentas 
+a las que se le aplique un interés mayor del 10%, de las sucursales 1 y 2.*/
+SELECT ROUND(AVG(SALDO),2) AS SALDO_MEDIO, ROUND(AVG(INTERES),2) AS INTERES_MEDIO
+FROM CUENTA
+WHERE (INTERES >= 0.1) AND (COD_SUCURSAL IN (1,2));
+
+--alternativa
+SELECT ROUND(AVG(SALDO),2) AS SALDO_MEDIO, AVG(INTERES) AS INTERES_MEDIO
+FROM CUENTA
+WHERE INTERES >= 0.1 AND COD_SUCURSAL IN (1,2);
+
+--alternativa
+SELECT sucursal.cod_sucursal,
+AVG(cuenta.saldo) AS Saldo_Medio,
+AVG(cuenta.interes) AS interes_medio
+FROM sucursal, cuenta
+WHERE cuenta.interes >= 0.10
+AND sucursal.cod_sucursal=cuenta.cod_sucursal
+AND sucursal.cod_sucursal IN(1,2)
+GROUP BY sucursal.cod_sucursal;
+
+
+
+/* Ej 9. Mostrar  los tipos de movimientos de las cuentas bancarias, 
+sus descripciones y el volumen total de dinero que se manejado en cada tipo de movimiento.*/
+SELECT TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO, DESCRIPCION, SUM(IMPORTE) AS SUMA_TOTAL
+FROM TIPO_MOVIMIENTO , MOVIMIENTO
+WHERE TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO
+GROUP BY TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO;
+
+
+
+/* Ej 10. Mostrar cuál es la cantidad media que sacan de cajero 
+los clientes de nuestro banco.*/
+SELECT ROUND(AVG(IMPORTE),2) AS MEDIA_IMPORTE
+FROM MOVIMIENTO
+WHERE COD_TIPO_MOVIMIENTO = 'RC';
+-- alternativa
+SELECT ROUND(AVG(IMPORTE),2) AS MEDIA_IMPORTE
+FROM TIPO_MOVIMIENTO, MOVIMIENTO
+WHERE TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO
+	AND TIPO_MOVIMIENTO.DESCRIPCION = 'Retirada por cajero automatico';
+-- alternativa
+SELECT ROUND(AVG(IMPORTE),2) AS MEDIA_IMPORTE
+FROM TIPO_MOVIMIENTO, MOVIMIENTO
+WHERE TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO
+	AND TIPO_MOVIMIENTO.DESCRIPCION LIKE '%cajero%';
+
+/* Ej 11. Calcular la cantidad total de dinero que emite la entidad bancaria 
+clasificada según los tipos de movimientos de salida.*/
+SELECT TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO, SUM(IMPORTE) AS SUMA_TOTAL
+FROM TIPO_MOVIMIENTO, MOVIMIENTO
+WHERE (TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO) 
+	AND (SALIDA = 'Sí')
+GROUP BY TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO;
+
+/* Ej 12. Calcular la cantidad total de dinero que ingresa cada cuenta bancaria 
+clasificada según los tipos de movimientos de entrada.*/
+SELECT TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO, COD_CUENTA, SUM(IMPORTE) AS SUMA_TOTAL
+FROM TIPO_MOVIMIENTO, MOVIMIENTO
+WHERE (TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO) 
+	AND (SALIDA = 'No')
+GROUP BY TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO, COD_CUENTA;
+
+/* Ej 13. Calcular la cantidad total de dinero que sale de la entidad bancaria 
+mediante cualquier movimiento de “salida”.*/
+SELECT SUM(IMPORTE) AS SUMA_TOTAL
+FROM TIPO_MOVIMIENTO, MOVIMIENTO
+WHERE (TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO) AND (SALIDA = 'Sí');
+
+/* 14. Mostrar la suma total por tipo de movimiento de las cuentas bancarias de los clientes del banco. Se deben mostrar los siguientes campos: 
+apellidos, nombre, cod_cuenta, descripción  del  tipo  movimiento  y  el  total  acumulado  de  los  movimientos de un mismo tipo.*/
+SELECT APELLIDOS, NOMBRE, CUENTA.COD_CUENTA, DESCRIPCION, SUM(IMPORTE) AS SUMA_TOTAL
+FROM TIPO_MOVIMIENTO, MOVIMIENTO, CUENTA, CLIENTE
+WHERE (CLIENTE.COD_CLIENTE = CUENTA.COD_CLIENTE) AND (CUENTA.COD_CUENTA = MOVIMIENTO.COD_CUENTA) AND (TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO)
+GROUP BY APELLIDOS, NOMBRE, CUENTA.COD_CUENTA, DESCRIPCION;
+
+--alternativa
+SELECT APELLIDOS, NOMBRE, CUENTA.COD_CUENTA, DESCRIPCION, SUM(IMPORTE) AS SUMA_TOTAL
+FROM TIPO_MOVIMIENTO, MOVIMIENTO, CUENTA, CLIENTE
+WHERE (CLIENTE.COD_CLIENTE = CUENTA.COD_CLIENTE) AND (CUENTA.COD_CUENTA = MOVIMIENTO.COD_CUENTA) AND (TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO)
+GROUP BY CLIENTE.COD_CLIENTE, CUENTA.COD_CUENTA, DESCRIPCION;
+
+--Como el enunciado es ambiguo valdria
+SELECT APELLIDOS, NOMBRE, CUENTA.COD_CUENTA, DESCRIPCION, SUM(IMPORTE) AS SUMA_TOTAL
+FROM TIPO_MOVIMIENTO, MOVIMIENTO, CUENTA, CLIENTE
+WHERE (CLIENTE.COD_CLIENTE = CUENTA.COD_CLIENTE) AND (CUENTA.COD_CUENTA = MOVIMIENTO.COD_CUENTA) AND (TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO)
+GROUP BY CUENTA.COD_CUENTA, DESCRIPCION;
+
+/* 15. Contar el número de cuentas bancarias que no tienen asociados movimientos.*/
+SELECT COUNT(COD_CUENTA) as numero_cuentas
+FROM CUENTA
+WHERE COD_CUENTA NOT IN (SELECT COD_CUENTA FROM MOVIMIENTO WHERE CUENTA.COD_CUENTA = MOVIMIENTO.COD_CUENTA);
+
+--alternativa
+SELECT COUNT(COD_CUENTA) as numero_cuentas
+FROM CUENTA
+WHERE NOT EXISTS (SELECT COD_CUENTA FROM MOVIMIENTO WHERE CUENTA.COD_CUENTA = MOVIMIENTO.COD_CUENTA);
+
+/* 16. Por cada cliente, contar el número de cuentas bancarias 
+que posee sin movimientos. Se deben mostrar los siguientes campos: 
+cod_cliente, num_cuentas_sin_movimiento.*/
+SELECT COD_CLIENTE, COUNT(COD_CUENTA) AS NUM_CUENTAS_SIN_MOVIMIENTO
+FROM CUENTA
+WHERE COD_CUENTA NOT IN (SELECT COD_CUENTA FROM MOVIMIENTO)
+GROUP BY COD_CLIENTE;
+-- alternativa
+SELECT CLI.APELLIDOS, CLI.NOMBRE, COUNT(*) AS NUM_CUENTAS_SIN_MOV
+FROM CLIENTE CLI, (CUENTA C LEFT JOIN MOVIMIENTO M ON C.COD_CUENTA = M.COD_CUENTA)
+WHERE CLI.COD_CLIENTE = C.COD_CLIENTE AND M.COD_CUENTA IS NULL
+GROUP BY CLI.APELLIDOS, CLI.NOMBRE;
+
+/* 17. Mostrar el código de cliente, la suma total del dinero de todas sus cuentas 
+y el número de cuentas abiertas, sólo para aquellos clientes cuyo 
+capital supere los 35.000 euros.*/
+SELECT COD_CLIENTE, SUM(SALDO) AS SUMA_TOTAL, COUNT(COD_CUENTA) AS NUM_CUENTAS
+FROM CUENTA
+GROUP BY COD_CLIENTE
+HAVING SUM(SALDO) >= 35000;
+
+-- ALTERNATIVA con subconsulta
+select cod_cliente, SUM(saldo) as saldo, count(cod_cliente) as numero_cuentas 
+from cuenta where saldo in (select saldo from cuenta where saldo>35000 GROUP BY COD_CUENTA) GROUP BY COD_CUENTA;
+
+
+/* 18. Mostrar los apellidos, el nombre y el número de cuentas abiertas 
+sólo de aquellos clientes que tengan más de 2 cuentas. */
+SELECT APELLIDOS, NOMBRE, COUNT(COD_CUENTA) AS NUM_CUENTAS
+FROM CUENTA, CLIENTE
+WHERE CLIENTE.COD_CLIENTE = CUENTA.COD_CLIENTE
+GROUP BY CUENTA.COD_CLIENTE
+HAVING COUNT(COD_CUENTA) >= 2;
+
+
+/* 19. Mostrar el código de sucursal, dirección, capital del año anterior y 
+la suma de los saldos de sus cuentas, sólo de aquellas sucursales cuya 
+suma de los saldos de las cuentas supera el capital del año anterior.*/
+SELECT CUENTA.COD_SUCURSAL, DIRECCION, CAPITAL_ANIO_ANTERIOR, SUM(SALDO)
+FROM SUCURSAL, CUENTA
+WHERE SUCURSAL.COD_SUCURSAL = CUENTA.COD_SUCURSAL
+GROUP BY CUENTA.COD_SUCURSAL
+HAVING SUM(SALDO) > CAPITAL_ANIO_ANTERIOR;
+
+
+
+/* 20. Mostrar el código de cuenta, su saldo, la descripción del tipo de movimiento 
+y la suma total de dinero por movimiento, sólo para aquellas cuentas cuya 
+suma total de dinero por movimiento supere el 20% del saldo.*/
+SELECT CUENTA.COD_CUENTA, SALDO, DESCRIPCION, SUM(IMPORTE) AS SUMA_TOTAL
+FROM MOVIMIENTO, TIPO_MOVIMIENTO, CUENTA
+WHERE (TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO) 
+	AND (CUENTA.COD_CUENTA = MOVIMIENTO.COD_CUENTA)
+GROUP BY CUENTA.COD_CUENTA, DESCRIPCION
+HAVING SUM(IMPORTE) > SALDO*0.2;
+
+-- alternativa
+SELECT CUENTA.COD_CUENTA, SALDO, DESCRIPCION, SUM(IMPORTE) AS SUMA_TOTAL
+FROM MOVIMIENTO, TIPO_MOVIMIENTO, CUENTA
+WHERE (TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO) 
+	AND (CUENTA.COD_CUENTA = MOVIMIENTO.COD_CUENTA)
+GROUP BY CUENTA.COD_CUENTA, SALDO, DESCRIPCION
+HAVING SUM(IMPORTE) > SALDO/5;
+
+
+
+/* 21. Mostrar los mismos campos del ejercicio anterior pero ahora 
+sólo de aquellas cuentas cuya  suma  de  importes por movimiento supere el 10% del saldo 
+y no sean de la sucursal 4.*/
+SELECT CUENTA.COD_CUENTA, SALDO, DESCRIPCION, SUM(IMPORTE) AS SUMA_TOTAL
+FROM MOVIMIENTO, TIPO_MOVIMIENTO, CUENTA
+WHERE (TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO) 
+	AND (CUENTA.COD_CUENTA = MOVIMIENTO.COD_CUENTA) 
+	AND (COD_SUCURSAL != 4)
+GROUP BY CUENTA.COD_CUENTA, DESCRIPCION
+HAVING SUM(IMPORTE) > SALDO*0.1;
+
+--alternativa
+SELECT CUENTA.COD_CUENTA, SALDO, DESCRIPCION, SUM(IMPORTE) AS SUMA_TOTAL
+FROM MOVIMIENTO, TIPO_MOVIMIENTO, CUENTA
+WHERE (TIPO_MOVIMIENTO.COD_TIPO_MOVIMIENTO = MOVIMIENTO.COD_TIPO_MOVIMIENTO) 
+	AND (CUENTA.COD_CUENTA = MOVIMIENTO.COD_CUENTA) 
+	AND not (COD_SUCURSAL = 4)
+GROUP BY CUENTA.COD_CUENTA, DESCRIPCION
+HAVING SUM(IMPORTE) > SALDO*0.1;
+
+/* 22. Mostrar los datos de aquellos clientes para los que el saldo de sus cuentas 
+suponga al menos el 20% del capital del año anterior de su sucursal.*/
+SELECT CLIENTE.COD_CLIENTE, APELLIDOS, NOMBRE, CLIENTE.DIRECCION, CUENTA.COD_CUENTA, SALDO, CAPITAL_ANIO_ANTERIOR
+FROM CLIENTE, CUENTA, SUCURSAL
+WHERE (SUCURSAL.COD_SUCURSAL = CUENTA.COD_SUCURSAL) 
+AND (CLIENTE.COD_CLIENTE = CUENTA.COD_CLIENTE)
+GROUP BY CLIENTE.COD_CLIENTE, APELLIDOS, NOMBRE, CLIENTE.DIRECCION, CUENTA.COD_CUENTA, SALDO, CAPITAL_ANIO_ANTERIOR
+HAVING SALDO > CAPITAL_ANIO_ANTERIOR/10;
+
+
+select cliente.*, cuenta.saldo 
+from cuenta, cliente, sucursal  
+where cuenta.cod_cliente=cliente.cod_cliente 
+	and sucursal.cod_sucursal=cuenta.cod_sucursal
+	and (capital_anio_anterior*0.2)<=saldo 
+group by cuenta.cod_cliente;
